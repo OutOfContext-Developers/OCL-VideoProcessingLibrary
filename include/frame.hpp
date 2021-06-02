@@ -5,10 +5,9 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
-#include <inttypes.h>
 }
 
-#include <iostream>
+#include "sync.hpp"
 
 //! Frame class
 /*!
@@ -16,7 +15,7 @@ extern "C" {
   containers into specified data structures.
 */
 
-class Frame {
+class Frame : public Syncronizer {
 
 public:
     AVRational time_base;               //! A fractional represntation of number to describe time
@@ -24,7 +23,7 @@ public:
 protected:
     AVFormatContext* av_format_ctx;     //! Variable for AVFormatContext
     AVCodecContext* av_codec_ctx;       //! Variable for AVCodecContext
-    int stream_index;                   //! Index at which stream is available
+    int stream_index = -1;              //! Index at which stream is available
     AVFrame* av_frame;                  //! AVFrame
     AVPacket* av_packet;                //! AVPacket
     AVCodecParameters* av_codec_params; //! Parameters(information) of(about) the stream
@@ -35,6 +34,8 @@ public:
 
     //! Frame class destructor
     ~Frame();
+
+    static const char* av_make_error(int errnum);
 
     //! A function to open file for stream input and initialize the index of stream
     /*!
@@ -48,13 +49,15 @@ public:
       \param frame_buffer - Data array for individual frame
       \param pts - Presentation Time stamp of frame
     */
-    virtual bool read_frame(uint8_t* frame_buffer, int64_t* pts);
+    bool read_frame();
 
     //! A virtual function to seek pointer to specific frame
     /*!
       \param int64_t ts - Seek time
     */
-    virtual bool seek_frame(int64_t ts);
+    bool seek_frame(int64_t ts);
+
+    bool updateFrames();
 };
 
 
