@@ -53,6 +53,7 @@ bool Frame :: open(const char* filename, enum AVMediaType media_type) {
         time_base = av_format_ctx->streams[i]->time_base;
         break;
       }
+
     }
 
     // Check if stream was founds
@@ -76,6 +77,7 @@ bool Frame :: open(const char* filename, enum AVMediaType media_type) {
         return false;
     }
 
+    // Allocate frame and packet
     av_frame = av_frame_alloc();
     if (!av_frame) {
         printf("Couldn't allocate AVFrame\n");
@@ -92,6 +94,11 @@ bool Frame :: open(const char* filename, enum AVMediaType media_type) {
 
 bool Frame :: read_frame() {
 
+    // If frames queue is already full, no need to pull more frames
+    if( ALL.size() >= MAX_Q_SIZE ) {
+      return true;
+    }
+
     // Decode one frame
     int response;
     while (av_read_frame(av_format_ctx, av_packet) >= 0) {
@@ -106,28 +113,50 @@ bool Frame :: read_frame() {
             return false;
         }
 
+        bool unvisited = true;
         response = avcodec_receive_frame(av_codec_ctx, av_frame);
-        if (response == AVERROR(EAGAIN) || response == AVERROR_EOF) {
+
+        // Extract all frames per packet
+        // Video usually have single frame per packet but audio can have multiple
+        while(response == 0) {
+
+            if (response == AVERROR(EAGAIN) || response == AVERROR_EOF) {
+                break;
+            } else if (response < 0) {
+                printf("Failed to decode packet: %s\n", av_make_error(response));
+                return false;
+            }
+
+            // mark as visited
+            unvisited = false;
+            pts = av_frame->pts;
+
+            // Make it ready for next frame
             av_packet_unref(av_packet);
-            continue;
-        } else if (response < 0) {
-            printf("Failed to decode packet: %s\n", av_make_error(response));
-            return false;
+            // PostProcess the single extracted frame
+            processSingleFrame();
+            // try to extract next frame
+            response = avcodec_receive_frame(av_codec_ctx, av_frame);
         }
 
+
         av_packet_unref(av_packet);
-        break;
+        if ( (response == AVERROR(EAGAIN) || response == AVERROR_EOF) && unvisited)
+            continue;
+
+        return true;
     }
 
-    pts = av_frame->pts;
-    return true;
+    return false;
+
+
 }
 
 bool Frame :: seek_frame(int64_t pts) {
 
     av_seek_frame(av_format_ctx, stream_index, pts, AVSEEK_FLAG_BACKWARD);
 
-    // av_seek_frame takes effect after one frame, so I'm decoding one here
+    // av_seek_frame takes effect after one frame, so one is decoded here
     // so that the next call to video_reader_read_frame() will give the correct
     // frame
     int response;
@@ -157,8 +186,4 @@ bool Frame :: seek_frame(int64_t pts) {
     }
 
     return true;
-}
-
-bool Frame :: updateFrames() {
-  return updateFramesQueue();
 }

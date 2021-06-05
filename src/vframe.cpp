@@ -1,11 +1,17 @@
 #include "vframe.hpp"
 
 VideoFrame :: VideoFrame(const char* filename) {
+    // Open the file
     open(filename, AVMEDIA_TYPE_VIDEO);
 
+    // Get data metadata
     getMetaData();
-    allocateFrameBuffer(width*height*4);
-    read_video_frame();
+
+    // Allocate frame buffer with the number of pixels on screen
+    allocateFrameBuffer(width*height*4, sizeof(uint8_t));
+
+    // Pre read first frame
+    read_frame();
 }
 
 VideoFrame :: ~VideoFrame() {
@@ -29,11 +35,7 @@ AVPixelFormat VideoFrame :: correct_for_deprecated_pixel_format(AVPixelFormat pi
     }
 }
 
-
-bool VideoFrame :: read_video_frame() {
-
-    read_frame();
-
+bool VideoFrame :: processSingleFrame() {
     // Set up sws scaler
     if (!sws_scaler_ctx) {
         auto source_pix_fmt = correct_for_deprecated_pixel_format(av_codec_ctx->pix_fmt);
@@ -43,22 +45,27 @@ bool VideoFrame :: read_video_frame() {
     }
     if (!sws_scaler_ctx) {
         printf("Couldn't initialize sw scaler\n");
+        return false;
     }
 
-    uint8_t* dest[4] = { frame_buffer, NULL, NULL, NULL };
+    uint8_t* dest[4] = { (uint8_t*)frame_buffer, NULL, NULL, NULL };
     int dest_linesize[4] = { width * 4, 0, 0, 0 };
     sws_scale(sws_scaler_ctx, av_frame->data, av_frame->linesize, 0, av_frame->height, dest, dest_linesize);
+
+    updateFrame();
     return true;
 }
 
 void VideoFrame :: update() {
+
+    // If this is last frame then nothing to do
     if(LAST_FRAME)
       return;
 
-    while(updateFrames()) {
-      if(!read_video_frame()) {
+    // While the queue is not full, keep filling it
+    while(updateFramesQueue()) {
+      if(!read_frame()) {
         LAST_FRAME = true;
       }
-      // getMetaData();
     }
 }

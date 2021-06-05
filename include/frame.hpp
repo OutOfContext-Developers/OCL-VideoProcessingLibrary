@@ -51,13 +51,16 @@ public:
     */
     bool read_frame();
 
-    //! A virtual function to seek pointer to specific frame
+    //! A Function to seek pointer to specific frame
     /*!
-      \param int64_t ts - Seek time
+      \param ts - Seek time
     */
     bool seek_frame(int64_t ts);
 
-    bool updateFrames();
+    //! A pure virtual function for post processing of single frame ( which can be audio/ video anything)
+    //! To be processed in child class inheriting this
+    virtual bool processSingleFrame()  = 0;
+
 };
 
 
