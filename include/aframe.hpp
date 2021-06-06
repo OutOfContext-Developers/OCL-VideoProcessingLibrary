@@ -51,6 +51,9 @@ public:
   //! getSample function
   bool processSingleFrame();
 
+  //! Overridden function to allow this class to send multiple frames instead of one
+  std::pair<void*, int64_t> getFrame();
+
 };
 
 #endif

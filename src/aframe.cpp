@@ -138,3 +138,20 @@ void AudioFrame :: update() {
       }
     }
 }
+
+
+std::pair<void*, int64_t> AudioFrame :: getFrame() {
+
+    // Allocate memory to extract many many audio samples
+    int16_t* audioData= (int16_t*)malloc(MAX_Q_SIZE*sizeof(int16_t));
+
+    // Put all the samples into single array and return
+    for(int i=0; i<MAX_Q_SIZE; i++) {
+      void* data = (this->Syncronizer :: getFrame()).first;
+      audioData[i] = *((int16_t*)data);
+      free(data);
+    }
+
+    // pts is irrelavant here
+    return std::make_pair((void*)audioData, -1);
+}
