@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.16)
 project(FFMPEG)
 
 find_package(PkgConfig REQUIRED)
-set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:./install")
 pkg_check_modules(AVCODEC     REQUIRED IMPORTED_TARGET libavcodec)
 pkg_check_modules(AVFORMAT    REQUIRED IMPORTED_TARGET libavformat)
 pkg_check_modules(AVFILTER    REQUIRED IMPORTED_TARGET libavfilter)
