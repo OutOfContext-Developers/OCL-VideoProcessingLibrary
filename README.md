@@ -69,6 +69,12 @@ First install cmake if not already present.
    ```sh
    git clone --recurse-submodules https://github.com/OutOfContext-Developers/OCL-VideoProcessingLibrary.git
    ```
+2. Also before compiling this library make sure you have installed ffmpeg. To install ffmpeg, run script run.sh in FFMPEG/
+   ```sh
+   cd lib/FFMPEG
+   chmod +x ./run.sh
+   sudo ./run.sh
+   ```
 2. Make build directory and go inside build directory
    ```sh
    mkdir build && cd build
